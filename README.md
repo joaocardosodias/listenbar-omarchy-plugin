@@ -1,8 +1,9 @@
 # Listenbar para Omarchy
 
-Um widget de mídia para a barra do Omarchy com capa, título, artista, posição,
-duração e controles de reprodução. Ele usa MPRIS, a interface de mídia padrão
-do Linux, e funciona com:
+Um widget de mídia discreto para a barra do Omarchy. A barra mostra somente o
+nome da faixa; um clique abre um painel com capa, artista, posição, duração e
+controles de reprodução. Ele usa MPRIS, a interface de mídia padrão do Linux,
+e funciona com:
 
 - Spotify para Linux;
 - Spotifast (e o nome antigo Fastpotify);
@@ -14,13 +15,13 @@ do Linux, e funciona com:
 
 ## Recursos
 
-- capa da faixa com fallback para o ícone do aplicativo;
-- título e artista com rolagem suave para nomes longos;
-- posição, duração e barra de progresso clicável;
-- botões de faixa anterior, play/pause e próxima faixa;
-- painel com capa ampliada e lista de players disponíveis;
-- clique esquerdo na faixa para play/pause;
-- clique direito para abrir o painel;
+- somente o nome da faixa na barra, com rolagem suave para nomes longos;
+- painel compacto com capa, título, artista e álbum;
+- posição, duração e barra de progresso clicável dentro do painel;
+- botões de faixa anterior, play/pause e próxima faixa dentro do painel;
+- lista de players disponíveis;
+- clique esquerdo para abrir ou fechar o painel;
+- clique direito como atalho para play/pause;
 - roda do mouse para trocar de faixa;
 - seleção automática do player em reprodução;
 - preferências editáveis nas configurações da barra do Omarchy.
@@ -55,15 +56,14 @@ omarchy plugin update io.github.joaocardosodias.listenbar
 
 | Ação | Resultado |
 | --- | --- |
-| Clique esquerdo nos dados da faixa | Play/pause |
-| Clique direito | Abre ou fecha o painel |
+| Clique esquerdo no nome da faixa | Abre ou fecha o painel |
+| Clique direito | Play/pause |
 | Roda para cima | Faixa anterior |
 | Roda para baixo | Próxima faixa |
 | Clique na barra de progresso do painel | Avança para o ponto escolhido |
 
 As opções do widget permitem escolher o player preferido, ocultar o widget
-quando não há mídia, ajustar a largura do título e mostrar ou esconder capa,
-artista, minutagem, progresso e controles.
+quando não há mídia e ajustar a largura máxima do título.
 
 ### YouTube no navegador
 
@@ -88,7 +88,7 @@ Valide o plugin e execute os testes do modelo com:
 ```bash
 omarchy plugin validate .
 node tests/model.test.js
-qmllint -I /usr/share/omarchy/shell Main.qml TransportButton.qml
+qmllint -I /usr/share/omarchy/shell Main.qml
 ```
 
 Para testar uma cópia local sem alterar os arquivos deste repositório, clone o

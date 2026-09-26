@@ -8,11 +8,6 @@ import qs.Ui
 BarWidget {
     id: root
 
-    readonly property bool showCover: setting("showCover", true) !== false
-    readonly property bool showArtist: setting("showArtist", true) !== false
-    readonly property bool showTime: setting("showTime", true) !== false
-    readonly property bool showProgress: setting("showProgress", true) !== false
-    readonly property bool showControls: setting("showControls", true) !== false
     readonly property bool hideWhenIdle: setting("hideWhenIdle", true) !== false
     readonly property real maxTitleWidth: Math.max(Style.space(80), Style.space(Number(setting("maxTitleWidth", 190))))
     readonly property string playerPreference: String(setting("playerPreference", "Automático"))
@@ -27,12 +22,12 @@ BarWidget {
     readonly property string artist: live ? String(activePlayer.trackArtist || "") : ""
     readonly property string album: live ? String(activePlayer.trackAlbum || "") : ""
     readonly property string artUrl: live ? String(activePlayer.trackArtUrl || "") : ""
-    readonly property string label: Model.trackLabel(activePlayer, showArtist)
+    readonly property string barTitle: title || artist || sourceLabel
     readonly property string sourceLabel: Model.playerLabel(activePlayer)
     readonly property color foreground: bar ? bar.barForeground : Color.foreground
     readonly property color accent: playing ? Color.accent : Qt.darker(foreground, 1.35)
-    readonly property real coverSize: Math.max(Style.space(22), Math.min(Style.space(28), barSize - Style.space(8)))
     property int positionTick: 0
+    property bool barHovered: false
     readonly property real trackLength: live && activePlayer.lengthSupported ? Math.max(0, activePlayer.length) : 0
     readonly property real trackPosition: {
         var tick = positionTick;
@@ -101,13 +96,13 @@ BarWidget {
             return "Listenbar — nenhuma mídia";
 
         var prefix = playing ? "" : "Pausado — ";
-        return prefix + (label || sourceLabel) + "\n" + sourceLabel;
+        return prefix + (title || artist || sourceLabel) + "\nClique para abrir os controles";
     }
 
     moduleName: "io.github.joaocardosodias.listenbar"
     visible: live || !hideWhenIdle
-    implicitWidth: !visible ? 0 : (vertical ? barSize : horizontalContent.implicitWidth + Style.space(12))
-    implicitHeight: !visible ? 0 : (vertical ? verticalContent.implicitHeight + Style.space(8) : barSize)
+    implicitWidth: !visible ? 0 : (vertical ? barSize : labelClip.width + Style.space(14))
+    implicitHeight: !visible ? 0 : barSize
 
     Timer {
         interval: 1000
@@ -116,206 +111,93 @@ BarWidget {
         onTriggered: root.positionTick++
     }
 
-    Row {
-        id: horizontalContent
+    Item {
+        id: labelClip
 
-        visible: !root.vertical
+        visible: !root.vertical && root.barTitle !== ""
         anchors.centerIn: parent
-        spacing: Style.space(6)
-
-        Item {
-            id: coverFrame
-
-            visible: root.showCover
-            width: visible ? root.coverSize : 0
-            height: root.coverSize
-            anchors.verticalCenter: parent.verticalCenter
-
-            Rectangle {
-                anchors.fill: parent
-                radius: Style.spacing.labelGap
-                color: Style.normalFillFor(root.foreground, root.accent)
-                clip: true
-
-                Image {
-                    id: barCover
-
-                    anchors.fill: parent
-                    source: root.artUrl
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: barCover.status !== Image.Ready
-                    text: Model.playerGlyph(root.activePlayer)
-                    color: root.accent
-                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                    font.pixelSize: Style.font.iconLarge
-                }
-
-            }
-
-        }
-
-        Item {
-            id: labelClip
-
-            visible: root.label !== ""
-            width: visible ? Math.min(root.maxTitleWidth, labelText.implicitWidth) : 0
-            height: Math.max(labelText.implicitHeight, Style.space(18))
-            clip: true
-            anchors.verticalCenter: parent.verticalCenter
-
-            Text {
-                id: labelText
-
-                property real panOffset: 0
-                readonly property real overflow: Math.max(0, implicitWidth - labelClip.width)
-
-                anchors.verticalCenter: parent.verticalCenter
-                x: -panOffset
-                text: root.label
-                textFormat: Text.PlainText
-                color: root.foreground
-                font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                font.pixelSize: Style.font.body
-                onTextChanged: panOffset = 0
-            }
-
-            SequentialAnimation {
-                running: labelText.overflow > 0 && labelClip.visible && !root.popupOpen
-                loops: Animation.Infinite
-
-                PauseAnimation {
-                    duration: 2200
-                }
-
-                NumberAnimation {
-                    target: labelText
-                    property: "panOffset"
-                    from: 0
-                    to: labelText.overflow
-                    duration: Math.max(1400, labelText.overflow * 38)
-                    easing.type: Easing.InOutQuad
-                }
-
-                PauseAnimation {
-                    duration: 1800
-                }
-
-                NumberAnimation {
-                    target: labelText
-                    property: "panOffset"
-                    from: labelText.overflow
-                    to: 0
-                    duration: Math.max(900, labelText.overflow * 24)
-                    easing.type: Easing.InOutQuad
-                }
-
-            }
-
-        }
+        width: visible ? Math.min(root.maxTitleWidth, labelText.implicitWidth) : 0
+        height: Math.max(labelText.implicitHeight, Style.space(18))
+        clip: true
 
         Text {
-            visible: root.showTime && root.live && root.trackLength > 0
+            id: labelText
+
+            property real panOffset: 0
+            readonly property real overflow: Math.max(0, implicitWidth - labelClip.width)
+
             anchors.verticalCenter: parent.verticalCenter
-            text: Model.formatTime(root.trackPosition) + " / " + Model.formatTime(root.trackLength)
+            x: -panOffset
+            text: root.barTitle
             textFormat: Text.PlainText
-            color: Qt.darker(root.foreground, 1.35)
+            color: root.barHovered ? root.accent : (root.playing ? root.foreground : Qt.darker(root.foreground, 1.35))
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.caption
-            font.features: {
-                "tnum": 1
+            font.pixelSize: Style.font.body
+            onTextChanged: panOffset = 0
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 120
+                }
+
             }
+
         }
 
-        Row {
-            visible: root.showControls && root.live
-            spacing: 0
-            anchors.verticalCenter: parent.verticalCenter
+        SequentialAnimation {
+            running: labelText.overflow > 0 && labelClip.visible && !root.popupOpen
+            loops: Animation.Infinite
 
-            TransportButton {
-                iconText: "󰒮"
-                foreground: root.foreground
-                accent: root.accent
-                enabled: root.live && root.activePlayer.canGoPrevious
-                onClicked: root.previous()
+            PauseAnimation {
+                duration: 2200
             }
 
-            TransportButton {
-                iconText: root.playing ? "󰏤" : "󰐊"
-                foreground: root.foreground
-                accent: root.accent
-                enabled: root.live && (root.activePlayer.canTogglePlaying || root.activePlayer.canPlay || root.activePlayer.canPause)
-                onClicked: root.playPause()
+            NumberAnimation {
+                target: labelText
+                property: "panOffset"
+                from: 0
+                to: labelText.overflow
+                duration: Math.max(1400, labelText.overflow * 38)
+                easing.type: Easing.InOutQuad
             }
 
-            TransportButton {
-                iconText: "󰒭"
-                foreground: root.foreground
-                accent: root.accent
-                enabled: root.live && root.activePlayer.canGoNext
-                onClicked: root.next()
+            PauseAnimation {
+                duration: 1800
+            }
+
+            NumberAnimation {
+                target: labelText
+                property: "panOffset"
+                from: labelText.overflow
+                to: 0
+                duration: Math.max(900, labelText.overflow * 24)
+                easing.type: Easing.InOutQuad
             }
 
         }
 
     }
 
-    Column {
-        id: verticalContent
-
+    Text {
         visible: root.vertical
         anchors.centerIn: parent
-        spacing: Style.space(2)
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Model.playerGlyph(root.activePlayer)
-            color: root.accent
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.iconLarge
-        }
-
-        TransportButton {
-            visible: root.showControls && root.live
-            anchors.horizontalCenter: parent.horizontalCenter
-            buttonSize: Style.space(22)
-            iconText: root.playing ? "󰏤" : "󰐊"
-            foreground: root.foreground
-            accent: root.accent
-            enabled: root.live && (root.activePlayer.canTogglePlaying || root.activePlayer.canPlay || root.activePlayer.canPause)
-            onClicked: root.playPause()
-        }
-
-    }
-
-    Rectangle {
-        visible: root.showProgress && root.live && root.trackLength > 0 && !root.vertical
-        x: Style.space(6)
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Style.space(2)
-        width: Math.max(0, (root.width - Style.space(12)) * root.progress)
-        height: Math.max(1, Style.space(2))
-        radius: height / 2
-        color: root.accent
-        opacity: root.playing ? 0.95 : 0.5
+        text: "󰎈"
+        color: root.barHovered ? root.accent : root.foreground
+        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+        font.pixelSize: Style.font.iconLarge
     }
 
     MouseArea {
         anchors.fill: parent
-        z: -1
+        z: 1
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: root.live ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: function(mouse) {
             if (mouse.button === Qt.RightButton)
-                root.popupOpen = !root.popupOpen;
-            else
                 root.playPause();
+            else
+                root.popupOpen = !root.popupOpen;
         }
         onWheel: function(wheel) {
             if (wheel.angleDelta.y > 0)
@@ -324,14 +206,16 @@ BarWidget {
                 root.next();
         }
         onEntered: {
-            if (root.bar) {
+            root.barHovered = true;
+            if (root.bar)
                 root.bar.showTooltip(root, root.tooltip());
-            }
+
         }
         onExited: {
-            if (root.bar) {
+            root.barHovered = false;
+            if (root.bar)
                 root.bar.hideTooltip(root);
-            }
+
         }
     }
 
