@@ -235,37 +235,29 @@ BarWidget {
             anchors.fill: parent
             spacing: Style.space(12)
 
-            Flickable {
+            Row {
+                id: playerTabs
+
                 visible: root.sourcePlayers.length > 1
                 width: parent.width
-                height: visible ? playerTabs.implicitHeight : 0
-                contentWidth: playerTabs.implicitWidth
-                contentHeight: playerTabs.implicitHeight
-                flickableDirection: Flickable.HorizontalFlick
-                boundsBehavior: Flickable.StopAtBounds
-                interactive: contentWidth > width
-                clip: true
+                spacing: Style.space(3)
 
-                Row {
-                    id: playerTabs
+                Repeater {
+                    model: root.sourcePlayers
 
-                    spacing: Style.space(4)
+                    delegate: Button {
+                        required property var modelData
 
-                    Repeater {
-                        model: root.sourcePlayers
-
-                        delegate: Button {
-                            required property var modelData
-
-                            text: Model.playerTabLabel(modelData)
-                            iconText: Model.playerGlyph(modelData)
-                            foreground: root.foreground
-                            active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)
-                            horizontalPadding: Style.spacing.controlPaddingX
-                            verticalPadding: Style.spacing.controlPaddingY
-                            onClicked: root.choosePlayer(modelData)
-                        }
-
+                        width: (playerTabs.width - playerTabs.spacing * (root.sourcePlayers.length - 1)) / root.sourcePlayers.length
+                        clip: true
+                        text: Model.playerTabLabel(modelData)
+                        iconText: root.sourcePlayers.length <= 3 ? Model.playerGlyph(modelData) : ""
+                        foreground: root.foreground
+                        active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)
+                        fontSize: root.sourcePlayers.length <= 2 ? Style.font.bodySmall : Style.font.caption
+                        horizontalPadding: root.sourcePlayers.length <= 2 ? Style.spacing.controlPaddingX : Style.space(3)
+                        verticalPadding: Style.spacing.controlPaddingY
+                        onClicked: root.choosePlayer(modelData)
                     }
 
                 }
@@ -331,26 +323,41 @@ BarWidget {
                         elide: Text.ElideRight
                     }
 
-                    Text {
-                        visible: text !== ""
-                        width: parent.width
-                        text: root.album
-                        textFormat: Text.PlainText
-                        color: Qt.darker(root.foreground, 1.55)
-                        font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                        font.pixelSize: Style.font.caption
-                        elide: Text.ElideRight
-                    }
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: Style.space(4)
 
-                    Text {
-                        visible: root.sourcePlayers.length <= 1
-                        width: parent.width
-                        text: root.sourceLabel
-                        textFormat: Text.PlainText
-                        color: root.accent
-                        font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                        font.pixelSize: Style.font.caption
-                        elide: Text.ElideRight
+                        Button {
+                            iconText: "󰒮"
+                            foreground: root.foreground
+                            horizontalPadding: Style.spacing.controlPaddingX
+                            verticalPadding: Style.space(4)
+                            enabled: root.live && root.activePlayer.canGoPrevious
+                            opacity: enabled ? 1 : 0.35
+                            onClicked: root.previous()
+                        }
+
+                        Button {
+                            iconText: root.playing ? "󰏤" : "󰐊"
+                            foreground: root.foreground
+                            iconSize: Style.font.iconLarge
+                            horizontalPadding: Style.spacing.panelGap
+                            verticalPadding: Style.space(4)
+                            enabled: root.live && (root.activePlayer.canTogglePlaying || root.activePlayer.canPlay || root.activePlayer.canPause)
+                            opacity: enabled ? 1 : 0.35
+                            onClicked: root.playPause()
+                        }
+
+                        Button {
+                            iconText: "󰒭"
+                            foreground: root.foreground
+                            horizontalPadding: Style.spacing.controlPaddingX
+                            verticalPadding: Style.space(4)
+                            enabled: root.live && root.activePlayer.canGoNext
+                            opacity: enabled ? 1 : 0.35
+                            onClicked: root.next()
+                        }
+
                     }
 
                 }
@@ -419,38 +426,6 @@ BarWidget {
                     color: Qt.darker(root.foreground, 1.35)
                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                     font.pixelSize: Style.font.caption
-                }
-
-            }
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: Style.space(8)
-
-                Button {
-                    iconText: "󰒮"
-                    foreground: root.foreground
-                    enabled: root.live && root.activePlayer.canGoPrevious
-                    opacity: enabled ? 1 : 0.35
-                    onClicked: root.previous()
-                }
-
-                Button {
-                    iconText: root.playing ? "󰏤" : "󰐊"
-                    foreground: root.foreground
-                    iconSize: Style.font.iconLarge
-                    horizontalPadding: Style.spacing.panelGap
-                    enabled: root.live && (root.activePlayer.canTogglePlaying || root.activePlayer.canPlay || root.activePlayer.canPause)
-                    opacity: enabled ? 1 : 0.35
-                    onClicked: root.playPause()
-                }
-
-                Button {
-                    iconText: "󰒭"
-                    foreground: root.foreground
-                    enabled: root.live && root.activePlayer.canGoNext
-                    opacity: enabled ? 1 : 0.35
-                    onClicked: root.next()
                 }
 
             }

@@ -17,7 +17,7 @@ e funciona com:
 
 - somente o nome da faixa na barra, com rolagem suave para nomes longos;
 - abas no topo do painel para alternar entre as fontes de áudio;
-- painel compacto com capa, título, artista e álbum;
+- painel compacto com capa, título e artista;
 - posição, duração e barra de progresso clicável dentro do painel;
 - botões de faixa anterior, play/pause e próxima faixa dentro do painel;
 - lista de players disponíveis;
