@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.joaocardosodias.listenbar",
   "name": "Listenbar",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "author": "João Cardoso Dias",
   "license": "MIT",
   "description": "Nome da faixa na barra e painel MPRIS com abas, tempo e cores geradas da capa.",

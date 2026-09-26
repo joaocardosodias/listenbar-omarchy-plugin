@@ -64,10 +64,6 @@ BarWidget {
     readonly property real progress: trackLength > 0 ? Math.max(0, Math.min(1, trackPosition / trackLength)) : 0
     property bool popupOpen: false
 
-    function resetPalette() {
-        paletteReady = false;
-    }
-
     function generatePalette() {
         if (!artUrl)
             return ;
@@ -191,7 +187,6 @@ BarWidget {
     }
 
     onArtUrlChanged: {
-        resetPalette();
         if (artUrl)
             paletteDelay.restart();
 
