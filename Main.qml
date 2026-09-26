@@ -374,7 +374,8 @@ BarWidget {
         owner: root
         open: root.popupOpen
         backgroundColor: root.panelBackground
-        borderSpec: Border.none()
+        borderColor: root.panelAccent
+        borderSpec: Border.localOrSurfaceSpec("popups", "border", root.panelAccent, root.panelAccent, Math.max(1, Style.space(2)))
         contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
 

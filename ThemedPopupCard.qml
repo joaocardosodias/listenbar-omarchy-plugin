@@ -165,13 +165,6 @@ PopupWindow {
             id: cardHover
         }
 
-        Behavior on color {
-            ColorAnimation {
-                duration: 260
-            }
-
-        }
-
         Behavior on opacity {
             NumberAnimation {
                 duration: 140
