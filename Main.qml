@@ -226,7 +226,6 @@ BarWidget {
         bar: root.bar
         owner: root
         open: root.popupOpen
-        centerOnBar: true
         contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
 
@@ -258,7 +257,7 @@ BarWidget {
                         delegate: Button {
                             required property var modelData
 
-                            text: Model.playerLabel(modelData)
+                            text: Model.playerTabLabel(modelData)
                             iconText: Model.playerGlyph(modelData)
                             foreground: root.foreground
                             active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)

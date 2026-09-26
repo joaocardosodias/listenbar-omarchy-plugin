@@ -120,6 +120,18 @@ function playerLabel(player) {
   return String(player.identity || player.desktopEntry || playerKey(player) || "Player")
 }
 
+function playerTabLabel(player) {
+  if (!player) return "Player"
+  if (isSpotifast(player)) return "Spotifast"
+  if (isSpotify(player)) return "Spotify"
+
+  var label = String(player.identity || player.desktopEntry || playerKey(player) || "Player")
+  label = label.replace(/^mozilla\s+/i, "")
+  label = label.replace(/^google\s+/i, "")
+  if (label.length > 18) label = label.substring(0, 17) + "…"
+  return label
+}
+
 function playerGlyph(player) {
   if (isSpotifast(player) || isSpotify(player)) return ""
   if (isBrowser(player)) return ""
@@ -163,6 +175,7 @@ if (typeof module !== "undefined") {
     findByKey: findByKey,
     selectPlayer: selectPlayer,
     playerLabel: playerLabel,
+    playerTabLabel: playerTabLabel,
     playerGlyph: playerGlyph,
     trackLabel: trackLabel,
     formatTime: formatTime
