@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.joaocardosodias.listenbar",
+  "name": "Listenbar",
+  "version": "0.1.0",
+  "author": "João Cardoso Dias",
+  "license": "MIT",
+  "description": "Capa, minutagem e controles MPRIS para Spotify, Spotifast e YouTube na barra do Omarchy.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Main.qml"
+  },
+  "barWidget": {
+    "displayName": "Listenbar",
+    "description": "Mostra a música atual com capa, progresso, minutagem e controles de reprodução.",
+    "category": "Media",
+    "aliases": ["media", "music", "mpris", "spotify", "spotifast", "youtube"],
+    "allowMultiple": false,
+    "defaultSection": "center",
+    "defaults": {
+      "playerPreference": "Automático",
+      "maxTitleWidth": 190,
+      "showCover": true,
+      "showArtist": true,
+      "showTime": true,
+      "showProgress": true,
+      "showControls": true,
+      "hideWhenIdle": true
+    },
+    "schema": [
+      {
+        "key": "playerPreference",
+        "type": "enum",
+        "label": "Player preferido",
+        "options": ["Automático", "Spotify", "Spotifast", "Navegador/YouTube"],
+        "defaultValue": "Automático",
+        "description": "No modo Automático, o player que está tocando tem prioridade."
+      },
+      {
+        "key": "maxTitleWidth",
+        "type": "integer",
+        "label": "Largura máxima do título (px)",
+        "min": 80,
+        "max": 420,
+        "step": 10,
+        "defaultValue": 190
+      },
+      {"key": "showCover", "type": "boolean", "label": "Mostrar capa", "defaultValue": true},
+      {"key": "showArtist", "type": "boolean", "label": "Mostrar artista", "defaultValue": true},
+      {"key": "showTime", "type": "boolean", "label": "Mostrar minutagem", "defaultValue": true},
+      {"key": "showProgress", "type": "boolean", "label": "Mostrar progresso", "defaultValue": true},
+      {"key": "showControls", "type": "boolean", "label": "Mostrar controles", "defaultValue": true},
+      {"key": "hideWhenIdle", "type": "boolean", "label": "Ocultar sem mídia", "defaultValue": true}
+    ]
+  }
+}
