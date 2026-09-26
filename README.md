@@ -1,48 +1,45 @@
 # Listenbar para Omarchy
 
-Um widget de mídia discreto para a barra do Omarchy. A barra mostra somente o
-nome da faixa; um clique abre um painel com capa, artista, posição, duração e
-controles de reprodução. Ele usa MPRIS, a interface de mídia padrão do Linux,
-e funciona com:
+O Listenbar mostra o nome da faixa na barra do Omarchy. Clique no nome para
+abrir um painel com a capa, os dados da faixa, o progresso e os controles de
+reprodução. O widget usa MPRIS, a interface de mídia padrão do Linux.
 
-- Spotify para Linux;
-- Spotifast (e o nome antigo Fastpotify);
-- YouTube, YouTube Music e outros sites reproduzidos em navegadores com MPRIS;
-- outros players Linux que publiquem metadados MPRIS.
+É compatível com Spotify para Linux, Spotifast/Fastpotify, YouTube e YouTube
+Music reproduzidos em navegadores que publiquem MPRIS, além de outros players
+Linux compatíveis.
 
-> O Omarchy 4 usa o Omarchy Shell/Quickshell para desenhar a barra. Embora ela
-> cumpra o papel da Waybar, este plugin segue o formato nativo atual do Omarchy.
+> O Omarchy 4 desenha a barra pelo Omarchy Shell/Quickshell. O Listenbar é um
+> plugin desse shell, não um módulo da Waybar tradicional.
 
 ## Recursos
 
-- somente o nome da faixa na barra, com rolagem suave para nomes longos;
-- abas no topo do painel para alternar entre as fontes de áudio;
-- painel compacto com capa, título e artista;
-- posição, duração e barra de progresso clicável dentro do painel;
-- botões de faixa anterior, play/pause e próxima faixa dentro do painel;
-- fundo adaptativo gerado da capa pelo Matugen;
-- fallback de duração para vídeos do YouTube quando o Firefox omite esse dado;
-- lista de players disponíveis;
-- clique esquerdo para abrir ou fechar o painel;
-- clique direito como atalho para play/pause;
-- roda do mouse para trocar de faixa;
-- seleção automática do player em reprodução;
-- preferências editáveis nas configurações da barra do Omarchy.
+- Mostra somente o nome da faixa na barra, com rolagem para títulos longos.
+- Abre o painel ao clicar no widget; as fontes de áudio aparecem em abas no
+  topo, com larguras iguais.
+- Exibe capa, título, artista, tempo decorrido, duração e barra de progresso.
+- Permite voltar, pausar/retomar, avançar e buscar uma posição na faixa.
+- Gera o fundo e a borda do painel com Matugen usando as cores da capa.
+- Mantém as cores atuais enquanto Matugen processa a capa seguinte, evitando
+  uma troca temporária para as cores do tema.
+- Recupera a duração de vídeos do YouTube pelo título quando o Firefox não a
+  envia pelo MPRIS.
+- Seleciona automaticamente o player em reprodução ou permite escolher uma
+  preferência nas configurações do widget.
 
 ## Requisitos
 
-- Omarchy 4.0 ou superior;
-- um player com suporte a MPRIS.
-- `matugen` para gerar as cores do painel;
-- `yt-dlp` para recuperar a duração omitida pelo Firefox no YouTube.
+- Omarchy 4 ou superior e um player que publique dados MPRIS.
+- `matugen` para gerar as cores do painel a partir da capa.
+- `yt-dlp` para recuperar a duração de vídeos quando o Firefox não fornece esse
+  dado.
 
-Instale as duas dependências pelo Omarchy:
+Instale as dependências pelo Omarchy:
 
 ```bash
 omarchy pkg add matugen yt-dlp
 ```
 
-Não é necessário instalar `playerctl` nem extensões do Spotify.
+Não é necessário instalar `playerctl` nem uma extensão do Spotify.
 
 ## Instalação
 
@@ -50,65 +47,66 @@ Não é necessário instalar `playerctl` nem extensões do Spotify.
 omarchy plugin add https://github.com/joaocardosodias/listenbar-omarchy-plugin.git --enable
 ```
 
-O widget é adicionado ao centro da barra por padrão. Para movê-lo:
+O widget é colocado no centro da barra por padrão. Para movê-lo, por exemplo,
+para a direita:
 
 ```bash
 omarchy bar move io.github.joaocardosodias.listenbar --section right
 ```
 
-Se o plugin já estiver instalado:
+Atualize uma instalação existente com:
 
 ```bash
 omarchy plugin update io.github.joaocardosodias.listenbar
 ```
 
-## Uso
+## Controles
 
 | Ação | Resultado |
 | --- | --- |
 | Clique esquerdo no nome da faixa | Abre ou fecha o painel |
-| Clique direito | Play/pause |
+| Clique direito | Pausa ou retoma a reprodução |
 | Roda para cima | Faixa anterior |
 | Roda para baixo | Próxima faixa |
-| Clique na barra de progresso do painel | Avança para o ponto escolhido |
+| Clique ou arraste na barra de progresso | Busca a posição escolhida |
+| Clique em uma aba | Seleciona aquela fonte de áudio |
 
-As opções do widget permitem escolher o player preferido, ocultar o widget
-quando não há mídia e ajustar a largura máxima do título.
+As configurações do widget permitem escolher Automático, Spotify, Spotifast ou
+Navegador/YouTube, ocultar o widget quando não houver mídia e ajustar a largura
+máxima do título.
 
-### YouTube no navegador
+## YouTube no navegador
 
-Chrome/Chromium e Firefox normalmente expõem a mídia ao MPRIS
-automaticamente. Se o YouTube não aparecer, confira se a integração de mídia
-do navegador não foi desativada e teste se o player aparece em:
+O Firefox e navegadores baseados em Chromium podem publicar a faixa ativa pelo
+MPRIS. Se o vídeo não aparecer, verifique se a integração de mídia do navegador
+está habilitada e se há um player MPRIS:
 
 ```bash
 busctl --user list | grep org.mpris.MediaPlayer2
 ```
 
-### Mais de um player aberto
-
-O modo **Automático** prioriza o player que está tocando. Quando há mais de uma
-fonte de áudio, elas aparecem como abas no topo do painel. Clique em uma aba
-para fixar aquele player temporariamente. Também é possível escolher Spotify,
-Spotifast ou navegador/YouTube nas configurações do widget.
+Algumas versões/configurações do Firefox não enviam a duração ou a posição da
+faixa. Nesses casos, o Listenbar usa `yt-dlp` para encontrar a duração pelo
+título e artista, e mantém o contador avançando localmente durante a reprodução.
+Esse fallback depende de `yt-dlp` e de o título identificar um resultado
+correspondente no YouTube.
 
 ## Desenvolvimento
 
-Valide o plugin e execute os testes do modelo com:
+Valide o manifesto, os scripts, os helpers e o QML com:
 
 ```bash
 omarchy plugin validate .
+bash -n scripts/generate-palette scripts/media-duration
 node tests/model.test.js
-qmllint -I /usr/share/omarchy/shell Main.qml
+qmllint -I /usr/share/omarchy/shell Main.qml ThemedPopupCard.qml
 ```
 
-Para testar uma cópia local sem alterar os arquivos deste repositório, clone o
-repositório para `~/.config/omarchy/plugins/io.github.joaocardosodias.listenbar`
-e rode:
+O shell recarrega plugins locais editados em
+`~/.config/omarchy/plugins/`. Para solicitar uma nova varredura:
 
 ```bash
 omarchy-shell shell rescanPlugins
-omarchy plugin enable io.github.joaocardosodias.listenbar --section center
 ```
 
 ## Remoção
