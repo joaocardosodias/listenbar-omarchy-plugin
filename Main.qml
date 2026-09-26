@@ -23,6 +23,7 @@ BarWidget {
     readonly property string artist: live ? String(activePlayer.trackArtist || "") : ""
     readonly property string artUrl: live ? String(activePlayer.trackArtUrl || "") : ""
     readonly property string trackUrl: live && activePlayer.metadata ? String(activePlayer.metadata["xesam:url"] || "") : ""
+    readonly property bool browserPlayer: live && Model.isBrowser(activePlayer)
     readonly property string timingKey: Model.playerKey(activePlayer) + "\u001f" + title + "\u001f" + trackUrl
     readonly property string barTitle: title || artist || sourceLabel
     readonly property string sourceLabel: Model.playerLabel(activePlayer)
@@ -103,20 +104,20 @@ BarWidget {
     function resetFallbackTiming() {
         fallbackDuration = 0;
         fallbackPosition = 0;
-        if (!nativeLengthAvailable && trackUrl)
+        if (!nativeLengthAvailable && (trackUrl || (browserPlayer && title)))
             durationDelay.restart();
 
     }
 
     function resolveFallbackDuration() {
-        if (!trackUrl || nativeLengthAvailable)
+        if (nativeLengthAvailable || (!trackUrl && (!browserPlayer || !title)))
             return ;
 
         if (durationProcess.running)
             durationProcess.running = false;
 
         durationProcess.pendingTimingKey = timingKey;
-        durationProcess.command = [durationScript, trackUrl];
+        durationProcess.command = [durationScript, trackUrl, title, artist];
         durationProcess.running = true;
     }
 
@@ -373,7 +374,7 @@ BarWidget {
         owner: root
         open: root.popupOpen
         backgroundColor: root.panelBackground
-        borderColor: Color.popups.border
+        borderSpec: Border.none()
         contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
 

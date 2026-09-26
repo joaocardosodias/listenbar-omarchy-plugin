@@ -13,7 +13,7 @@ cover_dir="$cache_root/covers"
 mkdir -p "$palette_dir" "$cover_dir"
 chmod 700 "$cache_root" "$palette_dir" "$cover_dir" 2>/dev/null || true
 
-cache_key=$(printf '%s' "$source_url" | sha256sum | cut -c1-32)
+cache_key=$(printf 'v2:%s' "$source_url" | sha256sum | cut -c1-32)
 palette_file="$palette_dir/$cache_key.tsv"
 
 if [[ -s $palette_file ]]; then
@@ -69,8 +69,8 @@ json=$(matugen image "$image_path" \
 
 palette=$(jq -r '
   [
-    .colors.background.dark.color,
     .colors.surface_container.dark.color,
+    .colors.surface_container_high.dark.color,
     .colors.primary.dark.color,
     .colors.on_surface.dark.color,
     .colors.secondary.dark.color

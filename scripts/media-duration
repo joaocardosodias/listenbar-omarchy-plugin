@@ -3,20 +3,30 @@
 set -euo pipefail
 
 media_url="${1:-}"
-[[ -n $media_url ]] || exit 1
+track_title="${2:-}"
+track_artist="${3:-}"
 command -v yt-dlp >/dev/null 2>&1 || exit 127
 
-host=$(python3 -c 'import sys, urllib.parse; print((urllib.parse.urlparse(sys.argv[1]).hostname or "").lower())' "$media_url")
-case "$host" in
-youtube.com | *.youtube.com | youtu.be | *.youtu.be) ;;
-*) exit 1 ;;
-esac
+target="$media_url"
+if [[ -n $media_url ]]; then
+  host=$(python3 -c 'import sys, urllib.parse; print((urllib.parse.urlparse(sys.argv[1]).hostname or "").lower())' "$media_url")
+  case "$host" in
+  youtube.com | *.youtube.com | youtu.be | *.youtu.be) ;;
+  *) exit 1 ;;
+  esac
+fi
+
+if [[ -z $media_url || $media_url =~ ^https://(www\.)?youtube\.com/?([?#].*)?$ ]]; then
+  search_query=$(printf '%s %s' "$track_title" "$track_artist" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
+  [[ -n $search_query ]] || exit 1
+  target="ytsearch1:$search_query"
+fi
 
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/listenbar/durations"
 mkdir -p "$cache_dir"
 chmod 700 "${XDG_CACHE_HOME:-$HOME/.cache}/listenbar" "$cache_dir" 2>/dev/null || true
 
-cache_key=$(printf '%s' "$media_url" | sha256sum | cut -c1-32)
+cache_key=$(printf '%s' "$target" | sha256sum | cut -c1-32)
 cache_file="$cache_dir/$cache_key"
 
 if [[ -s $cache_file ]]; then
@@ -24,7 +34,7 @@ if [[ -s $cache_file ]]; then
   exit 0
 fi
 
-duration=$(timeout 15 yt-dlp --no-playlist --skip-download --print duration -- "$media_url" 2>/dev/null | head -1)
+duration=$(timeout 20 yt-dlp --no-playlist --skip-download --print duration -- "$target" 2>/dev/null | head -1)
 [[ $duration =~ ^[0-9]+([.][0-9]+)?$ ]] || exit 1
 
 printf '%s\n' "$duration" > "$cache_file.new"
