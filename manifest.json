@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "id": "io.github.joaocardosodias.listenbar",
   "name": "Listenbar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "João Cardoso Dias",
   "license": "MIT",
-  "description": "Nome da faixa na barra e controles MPRIS em um painel compacto.",
+  "description": "Nome da faixa na barra e painel com abas para alternar entre players MPRIS.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Main.qml"
   },
   "barWidget": {
     "displayName": "Listenbar",
-    "description": "Mostra somente o nome da faixa; um clique abre capa, progresso e controles.",
+    "description": "Mostra somente o nome da faixa; um clique abre players em abas, capa, progresso e controles.",
     "category": "Media",
     "aliases": ["media", "music", "mpris", "spotify", "spotifast", "youtube"],
     "allowMultiple": false,

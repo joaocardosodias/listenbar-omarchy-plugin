@@ -235,6 +235,43 @@ BarWidget {
             anchors.fill: parent
             spacing: Style.space(12)
 
+            Flickable {
+                visible: root.sourcePlayers.length > 1
+                width: parent.width
+                height: visible ? playerTabs.implicitHeight : 0
+                contentWidth: playerTabs.implicitWidth
+                contentHeight: playerTabs.implicitHeight
+                flickableDirection: Flickable.HorizontalFlick
+                boundsBehavior: Flickable.StopAtBounds
+                interactive: contentWidth > width
+                clip: true
+
+                Row {
+                    id: playerTabs
+
+                    spacing: Style.space(4)
+
+                    Repeater {
+                        model: root.sourcePlayers
+
+                        delegate: Button {
+                            required property var modelData
+
+                            text: Model.playerLabel(modelData)
+                            iconText: Model.playerGlyph(modelData)
+                            foreground: root.foreground
+                            active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)
+                            horizontalPadding: Style.spacing.controlPaddingX
+                            verticalPadding: Style.spacing.controlPaddingY
+                            onClicked: root.choosePlayer(modelData)
+                        }
+
+                    }
+
+                }
+
+            }
+
             Row {
                 width: parent.width
                 spacing: Style.space(12)
@@ -306,6 +343,7 @@ BarWidget {
                     }
 
                     Text {
+                        visible: root.sourcePlayers.length <= 1
                         width: parent.width
                         text: root.sourceLabel
                         textFormat: Text.PlainText
@@ -413,38 +451,6 @@ BarWidget {
                     enabled: root.live && root.activePlayer.canGoNext
                     opacity: enabled ? 1 : 0.35
                     onClicked: root.next()
-                }
-
-            }
-
-            Column {
-                visible: root.sourcePlayers.length > 1
-                width: parent.width
-                spacing: Style.space(4)
-
-                Text {
-                    text: "PLAYERS"
-                    color: Qt.darker(root.foreground, 1.5)
-                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                    font.pixelSize: Style.font.caption
-                    font.bold: true
-                }
-
-                Repeater {
-                    model: root.sourcePlayers
-
-                    delegate: Button {
-                        required property var modelData
-
-                        width: parent.width
-                        text: Model.playerLabel(modelData) + (modelData.isPlaying ? "  •  tocando" : "")
-                        iconText: Model.playerGlyph(modelData)
-                        foreground: root.foreground
-                        active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)
-                        leftAlign: true
-                        onClicked: root.choosePlayer(modelData)
-                    }
-
                 }
 
             }

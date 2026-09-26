@@ -16,6 +16,7 @@ e funciona com:
 ## Recursos
 
 - somente o nome da faixa na barra, com rolagem suave para nomes longos;
+- abas no topo do painel para alternar entre as fontes de áudio;
 - painel compacto com capa, título, artista e álbum;
 - posição, duração e barra de progresso clicável dentro do painel;
 - botões de faixa anterior, play/pause e próxima faixa dentro do painel;
@@ -77,9 +78,10 @@ busctl --user list | grep org.mpris.MediaPlayer2
 
 ### Mais de um player aberto
 
-O modo **Automático** prioriza o player que está tocando. No painel, clique em
-outro player para fixá-lo temporariamente. Também é possível escolher
-Spotify, Spotifast ou navegador/YouTube nas configurações do widget.
+O modo **Automático** prioriza o player que está tocando. Quando há mais de uma
+fonte de áudio, elas aparecem como abas no topo do painel. Clique em uma aba
+para fixar aquele player temporariamente. Também é possível escolher Spotify,
+Spotifast ou navegador/YouTube nas configurações do widget.
 
 ## Desenvolvimento
 
