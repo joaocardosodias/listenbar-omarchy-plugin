@@ -365,37 +365,21 @@ BarWidget {
         }
     }
 
-    PopupCard {
+    ThemedPopupCard {
         id: popup
 
         anchorItem: root
         bar: root.bar
         owner: root
         open: root.popupOpen
-        borderColor: root.paletteReady ? root.panelAccent : Color.popups.border
+        backgroundColor: root.panelBackground
+        borderColor: Color.popups.border
         contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
-
-        Rectangle {
-            z: 0
-            anchors.fill: parent
-            anchors.margins: -popup.padding + Style.space(1)
-            radius: Math.max(0, Style.cornerRadius - Style.space(1))
-            color: root.panelBackground
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 260
-                }
-
-            }
-
-        }
 
         Column {
             id: popupContent
 
-            z: 1
             anchors.fill: parent
             spacing: Style.space(12)
 
@@ -533,9 +517,10 @@ BarWidget {
             }
 
             Item {
-                visible: root.live && root.trackLength > 0
+                visible: root.live
                 width: parent.width
                 height: Style.space(18)
+                opacity: root.trackLength > 0 ? 1 : 0.35
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
@@ -570,13 +555,13 @@ BarWidget {
             }
 
             Row {
-                visible: root.live && root.trackLength > 0
+                visible: root.live
                 width: parent.width
 
                 Text {
                     id: elapsedLabel
 
-                    text: Model.formatTime(root.trackPosition)
+                    text: root.trackLength > 0 ? Model.formatTime(root.trackPosition) : "--:--"
                     color: root.panelMuted
                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                     font.pixelSize: Style.font.caption
@@ -590,7 +575,7 @@ BarWidget {
                 Text {
                     id: durationLabel
 
-                    text: Model.formatTime(root.trackLength)
+                    text: root.trackLength > 0 ? Model.formatTime(root.trackLength) : "--:--"
                     color: root.panelMuted
                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                     font.pixelSize: Style.font.caption
