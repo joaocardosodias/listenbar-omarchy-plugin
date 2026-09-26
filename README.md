@@ -89,7 +89,9 @@ Algumas versões/configurações do Firefox não enviam a duração ou a posiç�
 faixa. Nesses casos, o Listenbar usa `yt-dlp` para encontrar a duração pelo
 título e artista, e mantém o contador avançando localmente durante a reprodução.
 Esse fallback depende de `yt-dlp` e de o título identificar um resultado
-correspondente no YouTube.
+correspondente no YouTube. Após buscar uma posição no Firefox, o widget mantém
+essa posição localmente porque algumas versões do navegador passam a reportar
+zero pelo MPRIS mesmo com a reprodução ativa.
 
 ## Desenvolvimento
 

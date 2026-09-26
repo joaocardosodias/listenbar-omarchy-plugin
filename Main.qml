@@ -45,14 +45,17 @@ BarWidget {
     readonly property color panelMuted: Qt.rgba(panelForeground.r, panelForeground.g, panelForeground.b, 0.7)
     property real fallbackDuration: 0
     property real fallbackPosition: 0
+    property real rememberedNativeLength: 0
+    property bool browserPositionOverride: false
     property int positionTick: 0
     property bool barHovered: false
     readonly property bool nativeLengthAvailable: live && activePlayer.lengthSupported && activePlayer.length > 0
     readonly property bool fallbackTimingActive: !nativeLengthAvailable && fallbackDuration > 0
-    readonly property real trackLength: nativeLengthAvailable ? Math.max(0, activePlayer.length) : fallbackDuration
+    readonly property real currentNativeLength: nativeLengthAvailable ? Math.max(0, activePlayer.length) : 0
+    readonly property real trackLength: currentNativeLength > 0 ? currentNativeLength : Math.max(fallbackDuration, rememberedNativeLength)
     readonly property real trackPosition: {
         var tick = positionTick;
-        if (fallbackTimingActive)
+        if (fallbackTimingActive || (browserPlayer && browserPositionOverride))
             return Math.min(fallbackPosition, trackLength);
 
         if (!live || !activePlayer.positionSupported)
@@ -99,14 +102,17 @@ BarWidget {
 
     function resetFallbackTiming() {
         fallbackDuration = 0;
-        fallbackPosition = 0;
-        if (!nativeLengthAvailable && (trackUrl || (browserPlayer && title)))
+        fallbackPosition = live && activePlayer.positionSupported ? Math.max(0, activePlayer.position) : 0;
+        rememberedNativeLength = currentNativeLength;
+        browserPositionOverride = false;
+        if (browserPlayer && title && trackUrl)
             durationDelay.restart();
-
+        else if (!nativeLengthAvailable && (trackUrl || (browserPlayer && title)))
+            durationDelay.restart();
     }
 
     function resolveFallbackDuration() {
-        if (nativeLengthAvailable || (!trackUrl && (!browserPlayer || !title)))
+        if ((!browserPlayer && nativeLengthAvailable) || (!trackUrl && (!browserPlayer || !title)))
             return ;
 
         if (durationProcess.running)
@@ -118,7 +124,7 @@ BarWidget {
     }
 
     function applyFallbackDuration(key, output) {
-        if (key !== timingKey || nativeLengthAvailable)
+        if (key !== timingKey)
             return ;
 
         var seconds = Number(String(output || "").trim());
@@ -170,7 +176,13 @@ BarWidget {
         if (!live || !activePlayer.canSeek || !activePlayer.positionSupported || trackLength <= 0)
             return false;
 
-        activePlayer.position = Math.max(0, Math.min(trackLength, seconds));
+        var target = Math.max(0, Math.min(trackLength, seconds));
+        rememberedNativeLength = Math.max(rememberedNativeLength, trackLength);
+        fallbackPosition = target;
+        if (browserPlayer)
+            browserPositionOverride = true;
+
+        activePlayer.position = target;
         return true;
     }
 
@@ -202,6 +214,11 @@ BarWidget {
     visible: live || !hideWhenIdle
     implicitWidth: !visible ? 0 : (vertical ? barSize : labelClip.width + Style.space(14))
     implicitHeight: !visible ? 0 : barSize
+    onCurrentNativeLengthChanged: {
+        if (currentNativeLength > 0)
+            rememberedNativeLength = currentNativeLength;
+
+    }
 
     Timer {
         interval: 1000
@@ -209,7 +226,7 @@ BarWidget {
         repeat: true
         onTriggered: {
             root.positionTick++;
-            if (root.fallbackTimingActive && root.playing)
+            if ((root.fallbackTimingActive || (root.browserPlayer && root.browserPositionOverride)) && root.playing)
                 root.fallbackPosition = Math.min(root.trackLength, root.fallbackPosition + 1);
 
         }
