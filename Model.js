@@ -134,7 +134,10 @@ function playerTabLabel(player) {
 
 function playerGlyph(player) {
   if (isSpotifast(player) || isSpotify(player)) return ""
-  if (isBrowser(player)) return ""
+  var haystack = playerSearchText(player)
+  if (haystack.indexOf("firefox") !== -1 || haystack.indexOf("zen") !== -1) return "󰈹"
+  if (haystack.indexOf("chrome") !== -1 || haystack.indexOf("chromium") !== -1) return ""
+  if (isBrowser(player)) return "󰖟"
   return "󰝚"
 }
 

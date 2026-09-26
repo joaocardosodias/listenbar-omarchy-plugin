@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -euo pipefail
+
+source_url="${1:-}"
+[[ -n $source_url ]] || exit 1
+command -v matugen >/dev/null 2>&1 || exit 127
+command -v jq >/dev/null 2>&1 || exit 127
+
+cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/listenbar"
+palette_dir="$cache_root/palettes"
+cover_dir="$cache_root/covers"
+mkdir -p "$palette_dir" "$cover_dir"
+chmod 700 "$cache_root" "$palette_dir" "$cover_dir" 2>/dev/null || true
+
+cache_key=$(printf '%s' "$source_url" | sha256sum | cut -c1-32)
+palette_file="$palette_dir/$cache_key.tsv"
+
+if [[ -s $palette_file ]]; then
+  cat "$palette_file"
+  exit 0
+fi
+
+image_path=""
+temporary_file=""
+
+cleanup() {
+  [[ -z $temporary_file ]] || rm -f -- "$temporary_file"
+}
+trap cleanup EXIT
+
+case "$source_url" in
+file://*)
+  encoded_path="${source_url#file://}"
+  image_path=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.argv[1]))' "$encoded_path")
+  [[ $image_path == /* && -f $image_path ]] || exit 1
+  ;;
+https://*)
+  host=$(python3 -c 'import sys, urllib.parse; print((urllib.parse.urlparse(sys.argv[1]).hostname or "").lower())' "$source_url")
+  case "$host" in
+  i.scdn.co | *.scdn.co | i.ytimg.com | *.ytimg.com | lh3.googleusercontent.com | *.googleusercontent.com) ;;
+  *) exit 1 ;;
+  esac
+
+  image_path="$cover_dir/$cache_key.image"
+  if [[ ! -s $image_path ]]; then
+    temporary_file="$image_path.new.$$"
+    curl -fsS --proto '=https' --max-redirs 0 --max-filesize 12000000 --max-time 10 \
+      -o "$temporary_file" -- "$source_url"
+    size=$(wc -c < "$temporary_file")
+    (( size > 0 && size <= 12000000 )) || exit 1
+    mv -f -- "$temporary_file" "$image_path"
+    temporary_file=""
+  fi
+  ;;
+*) exit 1 ;;
+esac
+
+size=$(wc -c < "$image_path")
+(( size > 0 && size <= 12000000 )) || exit 1
+
+json=$(matugen image "$image_path" \
+  --type scheme-content \
+  --mode dark \
+  --source-color-index 0 \
+  --dry-run \
+  --json hex \
+  --quiet)
+
+palette=$(jq -r '
+  [
+    .colors.background.dark.color,
+    .colors.surface_container.dark.color,
+    .colors.primary.dark.color,
+    .colors.on_surface.dark.color,
+    .colors.secondary.dark.color
+  ] | if all(.[]; test("^#[0-9A-Fa-f]{6}$")) then @tsv else empty end
+' <<< "$json")
+
+[[ -n $palette ]] || exit 1
+printf '%s\n' "$palette" > "$palette_file.new"
+mv -f -- "$palette_file.new" "$palette_file"
+printf '%s\n' "$palette"

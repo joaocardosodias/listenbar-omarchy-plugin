@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.joaocardosodias.listenbar",
   "name": "Listenbar",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "João Cardoso Dias",
   "license": "MIT",
-  "description": "Nome da faixa na barra e painel com abas para alternar entre players MPRIS.",
+  "description": "Nome da faixa na barra e painel MPRIS com abas, tempo e cores geradas da capa.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Main.qml"

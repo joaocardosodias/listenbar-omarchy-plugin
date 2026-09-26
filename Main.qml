@@ -1,6 +1,7 @@
 import "Model.js" as Model
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import qs.Commons
 import qs.Ui
@@ -20,17 +21,39 @@ BarWidget {
     readonly property bool playing: live && activePlayer.isPlaying === true
     readonly property string title: live ? String(activePlayer.trackTitle || "") : ""
     readonly property string artist: live ? String(activePlayer.trackArtist || "") : ""
-    readonly property string album: live ? String(activePlayer.trackAlbum || "") : ""
     readonly property string artUrl: live ? String(activePlayer.trackArtUrl || "") : ""
+    readonly property string trackUrl: live && activePlayer.metadata ? String(activePlayer.metadata["xesam:url"] || "") : ""
+    readonly property string timingKey: Model.playerKey(activePlayer) + "\u001f" + title + "\u001f" + trackUrl
     readonly property string barTitle: title || artist || sourceLabel
     readonly property string sourceLabel: Model.playerLabel(activePlayer)
     readonly property color foreground: bar ? bar.barForeground : Color.foreground
     readonly property color accent: playing ? Color.accent : Qt.darker(foreground, 1.35)
+    readonly property string pluginPath: String(Qt.resolvedUrl(".")).replace(/^file:\/\//, "").replace(/\/$/, "")
+    readonly property string paletteScript: pluginPath + "/scripts/generate-palette"
+    readonly property string durationScript: pluginPath + "/scripts/media-duration"
+    property bool paletteReady: false
+    property color generatedBackground: Color.popups.background
+    property color generatedSurface: Color.popups.background
+    property color generatedAccent: Color.accent
+    property color generatedForeground: Color.popups.text
+    property color generatedSecondary: Color.accent
+    readonly property color panelBackground: paletteReady ? generatedBackground : Color.popups.background
+    readonly property color panelSurface: paletteReady ? generatedSurface : Style.normalFillFor(Color.popups.text, Color.accent)
+    readonly property color panelAccent: paletteReady ? generatedAccent : Color.accent
+    readonly property color panelForeground: paletteReady ? generatedForeground : Color.popups.text
+    readonly property color panelMuted: Qt.rgba(panelForeground.r, panelForeground.g, panelForeground.b, 0.7)
+    property real fallbackDuration: 0
+    property real fallbackPosition: 0
     property int positionTick: 0
     property bool barHovered: false
-    readonly property real trackLength: live && activePlayer.lengthSupported ? Math.max(0, activePlayer.length) : 0
+    readonly property bool nativeLengthAvailable: live && activePlayer.lengthSupported && activePlayer.length > 0
+    readonly property bool fallbackTimingActive: !nativeLengthAvailable && fallbackDuration > 0
+    readonly property real trackLength: nativeLengthAvailable ? Math.max(0, activePlayer.length) : fallbackDuration
     readonly property real trackPosition: {
         var tick = positionTick;
+        if (fallbackTimingActive)
+            return Math.min(fallbackPosition, trackLength);
+
         if (!live || !activePlayer.positionSupported)
             return 0;
 
@@ -39,6 +62,73 @@ BarWidget {
     }
     readonly property real progress: trackLength > 0 ? Math.max(0, Math.min(1, trackPosition / trackLength)) : 0
     property bool popupOpen: false
+
+    function resetPalette() {
+        paletteReady = false;
+    }
+
+    function generatePalette() {
+        if (!artUrl)
+            return ;
+
+        if (paletteProcess.running)
+            paletteProcess.running = false;
+
+        paletteProcess.pendingArtUrl = artUrl;
+        paletteProcess.command = [paletteScript, artUrl];
+        paletteProcess.running = true;
+    }
+
+    function applyPalette(sourceUrl, output) {
+        if (sourceUrl !== artUrl)
+            return ;
+
+        var values = String(output || "").trim().split("\t");
+        if (values.length !== 5)
+            return ;
+
+        for (var i = 0; i < values.length; i++) {
+            if (!/^#[0-9A-Fa-f]{6}$/.test(values[i]))
+                return ;
+
+        }
+        generatedBackground = values[0];
+        generatedSurface = values[1];
+        generatedAccent = values[2];
+        generatedForeground = values[3];
+        generatedSecondary = values[4];
+        paletteReady = true;
+    }
+
+    function resetFallbackTiming() {
+        fallbackDuration = 0;
+        fallbackPosition = 0;
+        if (!nativeLengthAvailable && trackUrl)
+            durationDelay.restart();
+
+    }
+
+    function resolveFallbackDuration() {
+        if (!trackUrl || nativeLengthAvailable)
+            return ;
+
+        if (durationProcess.running)
+            durationProcess.running = false;
+
+        durationProcess.pendingTimingKey = timingKey;
+        durationProcess.command = [durationScript, trackUrl];
+        durationProcess.running = true;
+    }
+
+    function applyFallbackDuration(key, output) {
+        if (key !== timingKey || nativeLengthAvailable)
+            return ;
+
+        var seconds = Number(String(output || "").trim());
+        if (isFinite(seconds) && seconds > 0)
+            fallbackDuration = seconds;
+
+    }
 
     function close() {
         popupOpen = false;
@@ -99,6 +189,19 @@ BarWidget {
         return prefix + (title || artist || sourceLabel) + "\nClique para abrir os controles";
     }
 
+    onArtUrlChanged: {
+        resetPalette();
+        if (artUrl)
+            paletteDelay.restart();
+
+    }
+    onTimingKeyChanged: resetFallbackTiming()
+    Component.onCompleted: {
+        if (artUrl)
+            paletteDelay.restart();
+
+        resetFallbackTiming();
+    }
     moduleName: "io.github.joaocardosodias.listenbar"
     visible: live || !hideWhenIdle
     implicitWidth: !visible ? 0 : (vertical ? barSize : labelClip.width + Style.space(14))
@@ -108,7 +211,50 @@ BarWidget {
         interval: 1000
         running: root.live
         repeat: true
-        onTriggered: root.positionTick++
+        onTriggered: {
+            root.positionTick++;
+            if (root.fallbackTimingActive && root.playing)
+                root.fallbackPosition = Math.min(root.trackLength, root.fallbackPosition + 1);
+
+        }
+    }
+
+    Timer {
+        id: paletteDelay
+
+        interval: 180
+        onTriggered: root.generatePalette()
+    }
+
+    Timer {
+        id: durationDelay
+
+        interval: 180
+        onTriggered: root.resolveFallbackDuration()
+    }
+
+    Process {
+        id: paletteProcess
+
+        property string pendingArtUrl: ""
+
+        stdout: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: root.applyPalette(paletteProcess.pendingArtUrl, text)
+        }
+
+    }
+
+    Process {
+        id: durationProcess
+
+        property string pendingTimingKey: ""
+
+        stdout: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: root.applyFallbackDuration(durationProcess.pendingTimingKey, text)
+        }
+
     }
 
     Item {
@@ -226,12 +372,30 @@ BarWidget {
         bar: root.bar
         owner: root
         open: root.popupOpen
+        borderColor: root.paletteReady ? root.panelAccent : Color.popups.border
         contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
+
+        Rectangle {
+            z: 0
+            anchors.fill: parent
+            anchors.margins: -popup.padding + Style.space(1)
+            radius: Math.max(0, Style.cornerRadius - Style.space(1))
+            color: root.panelBackground
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 260
+                }
+
+            }
+
+        }
 
         Column {
             id: popupContent
 
+            z: 1
             anchors.fill: parent
             spacing: Style.space(12)
 
@@ -252,7 +416,8 @@ BarWidget {
                         clip: true
                         text: Model.playerTabLabel(modelData)
                         iconText: root.sourcePlayers.length <= 3 ? Model.playerGlyph(modelData) : ""
-                        foreground: root.foreground
+                        foreground: root.panelForeground
+                        accent: root.panelAccent
                         active: Model.playerKey(modelData) === Model.playerKey(root.activePlayer)
                         fontSize: root.sourcePlayers.length <= 2 ? Style.font.bodySmall : Style.font.caption
                         horizontalPadding: root.sourcePlayers.length <= 2 ? Style.spacing.controlPaddingX : Style.space(3)
@@ -272,7 +437,7 @@ BarWidget {
                     width: Style.space(86)
                     height: width
                     radius: Style.cornerRadius
-                    color: Style.normalFillFor(root.foreground, root.accent)
+                    color: root.panelSurface
                     clip: true
 
                     Image {
@@ -289,7 +454,7 @@ BarWidget {
                         anchors.centerIn: parent
                         visible: popupCover.status !== Image.Ready
                         text: Model.playerGlyph(root.activePlayer)
-                        color: root.accent
+                        color: root.panelAccent
                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                         font.pixelSize: Style.font.displayLarge
                     }
@@ -305,7 +470,7 @@ BarWidget {
                         width: parent.width
                         text: root.title || "Nada tocando"
                         textFormat: Text.PlainText
-                        color: root.foreground
+                        color: root.panelForeground
                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                         font.pixelSize: Style.font.subtitle
                         font.bold: true
@@ -317,7 +482,7 @@ BarWidget {
                         width: parent.width
                         text: root.artist
                         textFormat: Text.PlainText
-                        color: Qt.darker(root.foreground, 1.25)
+                        color: root.panelMuted
                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                         font.pixelSize: Style.font.body
                         elide: Text.ElideRight
@@ -329,7 +494,8 @@ BarWidget {
 
                         Button {
                             iconText: "󰒮"
-                            foreground: root.foreground
+                            foreground: root.panelForeground
+                            accent: root.panelAccent
                             horizontalPadding: Style.spacing.controlPaddingX
                             verticalPadding: Style.space(4)
                             enabled: root.live && root.activePlayer.canGoPrevious
@@ -339,7 +505,8 @@ BarWidget {
 
                         Button {
                             iconText: root.playing ? "󰏤" : "󰐊"
-                            foreground: root.foreground
+                            foreground: root.panelForeground
+                            accent: root.panelAccent
                             iconSize: Style.font.iconLarge
                             horizontalPadding: Style.spacing.panelGap
                             verticalPadding: Style.space(4)
@@ -350,7 +517,8 @@ BarWidget {
 
                         Button {
                             iconText: "󰒭"
-                            foreground: root.foreground
+                            foreground: root.panelForeground
+                            accent: root.panelAccent
                             horizontalPadding: Style.spacing.controlPaddingX
                             verticalPadding: Style.space(4)
                             enabled: root.live && root.activePlayer.canGoNext
@@ -374,13 +542,13 @@ BarWidget {
                     width: parent.width
                     height: Math.max(Style.space(3), 3)
                     radius: height / 2
-                    color: Qt.darker(root.foreground, 1.9)
+                    color: root.panelSurface
 
                     Rectangle {
                         width: parent.width * root.progress
                         height: parent.height
                         radius: parent.radius
-                        color: root.accent
+                        color: root.panelAccent
                     }
 
                 }
@@ -409,7 +577,7 @@ BarWidget {
                     id: elapsedLabel
 
                     text: Model.formatTime(root.trackPosition)
-                    color: Qt.darker(root.foreground, 1.35)
+                    color: root.panelMuted
                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                     font.pixelSize: Style.font.caption
                 }
@@ -423,7 +591,7 @@ BarWidget {
                     id: durationLabel
 
                     text: Model.formatTime(root.trackLength)
-                    color: Qt.darker(root.foreground, 1.35)
+                    color: root.panelMuted
                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                     font.pixelSize: Style.font.caption
                 }

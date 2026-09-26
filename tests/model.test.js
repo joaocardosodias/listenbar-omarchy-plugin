@@ -59,7 +59,7 @@ assert.equal(model.trackLabel(spotify, false), "Harder Better Faster Stronger")
 assert.equal(model.playerLabel(spotifast), "Spotifast")
 assert.equal(model.playerTabLabel(spotifast), "Spotifast")
 assert.equal(model.playerTabLabel(youtube), "Firefox")
-assert.equal(model.playerGlyph(youtube), "")
+assert.equal(model.playerGlyph(youtube), "󰈹")
 
 assert.equal(model.formatTime(0), "0:00")
 assert.equal(model.formatTime(65.9), "1:05")

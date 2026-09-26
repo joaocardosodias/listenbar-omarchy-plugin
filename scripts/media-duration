@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -euo pipefail
+
+media_url="${1:-}"
+[[ -n $media_url ]] || exit 1
+command -v yt-dlp >/dev/null 2>&1 || exit 127
+
+host=$(python3 -c 'import sys, urllib.parse; print((urllib.parse.urlparse(sys.argv[1]).hostname or "").lower())' "$media_url")
+case "$host" in
+youtube.com | *.youtube.com | youtu.be | *.youtu.be) ;;
+*) exit 1 ;;
+esac
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/listenbar/durations"
+mkdir -p "$cache_dir"
+chmod 700 "${XDG_CACHE_HOME:-$HOME/.cache}/listenbar" "$cache_dir" 2>/dev/null || true
+
+cache_key=$(printf '%s' "$media_url" | sha256sum | cut -c1-32)
+cache_file="$cache_dir/$cache_key"
+
+if [[ -s $cache_file ]]; then
+  cat "$cache_file"
+  exit 0
+fi
+
+duration=$(timeout 15 yt-dlp --no-playlist --skip-download --print duration -- "$media_url" 2>/dev/null | head -1)
+[[ $duration =~ ^[0-9]+([.][0-9]+)?$ ]] || exit 1
+
+printf '%s\n' "$duration" > "$cache_file.new"
+mv -f -- "$cache_file.new" "$cache_file"
+printf '%s\n' "$duration"

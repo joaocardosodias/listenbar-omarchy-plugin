@@ -20,6 +20,8 @@ e funciona com:
 - painel compacto com capa, título e artista;
 - posição, duração e barra de progresso clicável dentro do painel;
 - botões de faixa anterior, play/pause e próxima faixa dentro do painel;
+- fundo adaptativo gerado da capa pelo Matugen;
+- fallback de duração para vídeos do YouTube quando o Firefox omite esse dado;
 - lista de players disponíveis;
 - clique esquerdo para abrir ou fechar o painel;
 - clique direito como atalho para play/pause;
@@ -31,9 +33,16 @@ e funciona com:
 
 - Omarchy 4.0 ou superior;
 - um player com suporte a MPRIS.
+- `matugen` para gerar as cores do painel;
+- `yt-dlp` para recuperar a duração omitida pelo Firefox no YouTube.
 
-Não é necessário instalar `playerctl`, extensões do Spotify nem scripts de
-consulta em segundo plano.
+Instale as duas dependências pelo Omarchy:
+
+```bash
+omarchy pkg add matugen yt-dlp
+```
+
+Não é necessário instalar `playerctl` nem extensões do Spotify.
 
 ## Instalação
 
