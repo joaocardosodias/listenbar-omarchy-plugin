@@ -226,7 +226,8 @@ BarWidget {
         bar: root.bar
         owner: root
         open: root.popupOpen
-        contentWidth: fittedContentWidth(Style.space(340))
+        centerOnBar: true
+        contentWidth: fittedContentWidth(Style.space(320))
         contentHeight: fittedContentHeight(popupContent.implicitHeight)
 
         Column {
