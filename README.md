@@ -18,6 +18,8 @@ Linux compatíveis.
   topo, com larguras iguais.
 - Exibe capa, título, artista, tempo decorrido, duração e barra de progresso.
 - Permite voltar, pausar/retomar, avançar e buscar uma posição na faixa.
+- Tem um botão junto ao título para abrir a mídia ou trazer a janela do player
+  para o workspace atual.
 - Gera o fundo e a borda do painel com Matugen usando as cores da capa.
 - Mantém as cores atuais enquanto Matugen processa a capa seguinte, evitando
   uma troca temporária para as cores do tema.
@@ -70,6 +72,7 @@ omarchy plugin update io.github.joaocardosodias.listenbar
 | Roda para baixo | Próxima faixa |
 | Clique ou arraste na barra de progresso | Busca a posição escolhida |
 | Clique em uma aba | Seleciona aquela fonte de áudio |
+| Botão ao lado do título | Abre a mídia no navegador/player e traz a janela para o workspace atual |
 
 As configurações do widget permitem escolher Automático, Spotify, Spotifast ou
 Navegador/YouTube, ocultar o widget quando não houver mídia e ajustar a largura

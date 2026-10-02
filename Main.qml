@@ -32,6 +32,7 @@ BarWidget {
     readonly property string pluginPath: String(Qt.resolvedUrl(".")).replace(/^file:\/\//, "").replace(/\/$/, "")
     readonly property string paletteScript: pluginPath + "/scripts/generate-palette"
     readonly property string durationScript: pluginPath + "/scripts/media-duration"
+    readonly property string openMediaScript: pluginPath + "/scripts/open-media"
     property bool paletteReady: false
     property color generatedBackground: Color.popups.background
     property color generatedSurface: Color.popups.background
@@ -186,6 +187,15 @@ BarWidget {
         return true;
     }
 
+    function openMedia() {
+        if (!live || openMediaProcess.running)
+            return ;
+
+        var desktopEntry = String(activePlayer.desktopEntry || activePlayer.identity || "");
+        openMediaProcess.command = [openMediaScript, Model.playerKey(activePlayer), desktopEntry, trackUrl, title, artist];
+        openMediaProcess.running = true;
+    }
+
     function choosePlayer(player) {
         selectedPlayerKey = Model.playerKey(player);
     }
@@ -268,6 +278,10 @@ BarWidget {
             onStreamFinished: root.applyFallbackDuration(durationProcess.pendingTimingKey, text)
         }
 
+    }
+
+    Process {
+        id: openMediaProcess
     }
 
     Item {
@@ -464,15 +478,37 @@ BarWidget {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Style.space(4)
 
-                    Text {
+                    Row {
                         width: parent.width
-                        text: root.title || "Nada tocando"
-                        textFormat: Text.PlainText
-                        color: root.panelForeground
-                        font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                        font.pixelSize: Style.font.subtitle
-                        font.bold: true
-                        elide: Text.ElideRight
+                        spacing: Style.space(4)
+
+                        Text {
+                            width: parent.width - openMediaButton.width - parent.spacing
+                            text: root.title || "Nada tocando"
+                            textFormat: Text.PlainText
+                            color: root.panelForeground
+                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                            font.pixelSize: Style.font.subtitle
+                            font.bold: true
+                            elide: Text.ElideRight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        Button {
+                            id: openMediaButton
+
+                            iconText: "󰏌"
+                            foreground: root.panelForeground
+                            accent: root.panelAccent
+                            iconSize: Style.font.icon
+                            horizontalPadding: Style.space(5)
+                            verticalPadding: Style.space(3)
+                            tooltipText: "Abrir mídia no workspace atual"
+                            enabled: root.live
+                            opacity: enabled ? 1 : 0.35
+                            onClicked: root.openMedia()
+                        }
+
                     }
 
                     Text {

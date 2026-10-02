@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+player_service="${1:-}"
+player_name="${2:-}"
+track_url="${3:-}"
+track_title="${4:-}"
+track_artist="${5:-}"
+
+command -v hyprctl >/dev/null 2>&1 || exit 127
+command -v jq >/dev/null 2>&1 || exit 127
+
+workspace=$(hyprctl activeworkspace -j | jq -er '.id')
+identity=$(printf '%s %s' "$player_service" "$player_name" | tr '[:upper:]' '[:lower:]')
+
+case "$identity" in
+*firefox*) class_pattern='firefox' ;;
+*zen*) class_pattern='zen' ;;
+*chromium*) class_pattern='chromium|chrome' ;;
+*chrome*) class_pattern='chrome|chromium' ;;
+*brave*) class_pattern='brave' ;;
+*vivaldi*) class_pattern='vivaldi' ;;
+*edge*) class_pattern='edge' ;;
+*spotifast* | *fastpotify*) class_pattern='spotifast|fastpotify' ;;
+*spotify*) class_pattern='spotify' ;;
+*) class_pattern='' ;;
+esac
+
+case "$player_service" in
+org.mpris.MediaPlayer2.*) ;;
+*) player_service="" ;;
+esac
+
+if [[ -n $player_service ]] && busctl --user get-property "$player_service" \
+  /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2 CanRaise 2>/dev/null | grep -q 'b true'; then
+  busctl --user call "$player_service" /org/mpris/MediaPlayer2 \
+    org.mpris.MediaPlayer2 Raise >/dev/null 2>&1 || true
+fi
+
+if [[ -n $class_pattern && $identity =~ (firefox|zen|chromium|chrome|brave|vivaldi|edge) ]]; then
+  target_url="$track_url"
+  if [[ ! $target_url =~ ^https?:// || $target_url =~ ^https://(www\.)?youtube\.com/?([?#].*)?$ ]]; then
+    target_url=""
+  fi
+
+  if [[ -z $target_url && -n $track_title ]] && command -v yt-dlp >/dev/null 2>&1; then
+    search_query=$(printf '%s %s' "$track_title" "$track_artist" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
+    if [[ -n $search_query ]]; then
+      target_url=$(timeout 12 yt-dlp --no-playlist --skip-download --print webpage_url \
+        -- "ytsearch1:$search_query" 2>/dev/null | head -1 || true)
+    fi
+  fi
+
+  if [[ -n $target_url ]]; then
+    xdg-open "$target_url" >/dev/null 2>&1 &
+  fi
+fi
+
+if [[ -n $player_service ]]; then
+  player_pid=$(busctl --user status "$player_service" 2>/dev/null | sed -n 's/^PID=//p' | head -1 || true)
+else
+  player_pid=""
+fi
+
+address=""
+for attempt in {1..30}; do
+  clients=$(hyprctl clients -j 2>/dev/null || printf '[]')
+  address=$(jq -r \
+    --arg pid "$player_pid" \
+    --arg class "$class_pattern" \
+    --arg title "${track_title,,}" \
+    'map(select((($pid != "") and ((.pid|tostring) == $pid)) or (($class != "") and ((.class // "")|test($class; "i")))))
+     | sort_by([if ($title != "" and ((.title // "")|ascii_downcase|contains($title))) then 0 else 1 end, (.focusHistoryID // 9999)])
+     | first.address // empty' <<< "$clients")
+  [[ -n $address ]] && break
+
+  if (( attempt == 1 )) && [[ -z $player_pid && -n $player_name ]] \
+    && [[ $player_name =~ ^[A-Za-z0-9._-]+$ ]]; then
+    gtk-launch "${player_name,,}" >/dev/null 2>&1 &
+  fi
+  sleep 0.2
+done
+
+if [[ -n $address ]]; then
+  hyprctl dispatch movetoworkspace "$workspace,address:$address" >/dev/null
+  hyprctl dispatch focuswindow "address:$address" >/dev/null
+fi
