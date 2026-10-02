@@ -32,13 +32,15 @@ org.mpris.MediaPlayer2.*) ;;
 *) player_service="" ;;
 esac
 
+raised=0
 if [[ -n $player_service ]] && busctl --user get-property "$player_service" \
   /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2 CanRaise 2>/dev/null | grep -q 'b true'; then
   busctl --user call "$player_service" /org/mpris/MediaPlayer2 \
     org.mpris.MediaPlayer2 Raise >/dev/null 2>&1 || true
+  raised=1
 fi
 
-if [[ -n $class_pattern && $identity =~ (firefox|zen|chromium|chrome|brave|vivaldi|edge) ]]; then
+if [[ $raised -eq 0 && -n $class_pattern && $identity =~ (firefox|zen|chromium|chrome|brave|vivaldi|edge) ]]; then
   target_url="$track_url"
   if [[ ! $target_url =~ ^https?:// || $target_url =~ ^https://(www\.)?youtube\.com/?([?#].*)?$ ]]; then
     target_url=""
