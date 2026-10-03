@@ -54,6 +54,7 @@ BarWidget {
     readonly property bool fallbackTimingActive: !nativeLengthAvailable && fallbackDuration > 0
     readonly property real currentNativeLength: nativeLengthAvailable ? Math.max(0, activePlayer.length) : 0
     readonly property real trackLength: currentNativeLength > 0 ? currentNativeLength : Math.max(fallbackDuration, rememberedNativeLength)
+    readonly property bool backgroundWork: paletteProcess.running || durationProcess.running
     readonly property real trackPosition: {
         var tick = positionTick;
         if (fallbackTimingActive || (browserPlayer && browserPositionOverride))
@@ -483,7 +484,7 @@ BarWidget {
                         spacing: Style.space(4)
 
                         Text {
-                            width: parent.width - openMediaButton.width - parent.spacing
+                            width: parent.width - openMediaButton.width - parent.spacing - loadingIndicator.width - (loadingIndicator.visible ? parent.spacing : 0)
                             text: root.title || "Nada tocando"
                             textFormat: Text.PlainText
                             color: root.panelForeground
@@ -492,6 +493,33 @@ BarWidget {
                             font.bold: true
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
+                        }
+
+                        Item {
+                            id: loadingIndicator
+
+                            width: visible ? Style.space(13) : 0
+                            height: Style.space(16)
+                            visible: root.backgroundWork
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰑐"
+                                color: root.panelMuted
+                                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                font.pixelSize: Style.font.iconSmall
+                                rotation: 0
+
+                                RotationAnimation on rotation {
+                                    from: 0
+                                    to: 360
+                                    duration: 900
+                                    loops: Animation.Infinite
+                                    running: root.backgroundWork
+                                }
+
+                            }
+
                         }
 
                         Button {

@@ -20,6 +20,8 @@ Linux compatíveis.
 - Permite voltar, pausar/retomar, avançar e buscar uma posição na faixa.
 - Tem um botão junto ao título para abrir a mídia ou trazer a janela do player
   para o workspace atual.
+- Mostra um indicador giratório discreto enquanto Matugen ou `yt-dlp` está
+  processando a capa ou a duração da faixa.
 - Gera o fundo e a borda do painel com Matugen usando as cores da capa.
 - Mantém as cores atuais enquanto Matugen processa a capa seguinte, evitando
   uma troca temporária para as cores do tema.
